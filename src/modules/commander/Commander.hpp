@@ -34,6 +34,8 @@
 #ifndef COMMANDER_HPP_
 #define COMMANDER_HPP_
 
+#include "state_machine_helper.h"
+
 #include <controllib/blocks.hpp>
 #include <px4_module.h>
 
@@ -65,6 +67,11 @@ class Commander : public control::SuperBlock, public ModuleBase<Commander>
 public:
 	Commander() :
 		SuperBlock(nullptr, "COM"),
+		_home_eph_threshold(this, "HOME_H_T"),
+		_home_epv_threshold(this, "HOME_V_T"),
+		_eph_threshold(this, "POS_FS_EPH"),
+		_epv_threshold(this, "POS_FS_EPV"),
+		_evh_threshold(this, "VEL_FS_EVH"),
 		_mission_result_sub(ORB_ID(mission_result), 0, 0, &getSubscriptions())
 	{
 		updateParams();
@@ -89,6 +96,13 @@ public:
 
 private:
 
+	BlockParamFloat	_home_eph_threshold;
+	BlockParamFloat	_home_epv_threshold;
+
+	BlockParamFloat	_eph_threshold;
+	BlockParamFloat	_epv_threshold;
+	BlockParamFloat	_evh_threshold;
+
 	// Subscriptions
 	Subscription<mission_result_s> _mission_result_sub;
 
@@ -100,6 +114,21 @@ private:
 	bool set_home_position(orb_advert_t &homePub, home_position_s &home,
 				const vehicle_local_position_s &localPosition, const vehicle_global_position_s &globalPosition,
 				bool set_alt_only_to_lpos_ref);
+
+	// Set the main system state based on RC and override device inputs
+	transition_result_t set_main_state(struct vehicle_status_s *status, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed);
+
+	// Enable override (manual reversion mode) on the system
+	transition_result_t set_main_state_override_on(struct vehicle_status_s *status_local, bool *changed);
+
+	// Set the system main state based on the current RC inputs
+	transition_result_t set_main_state_rc(struct vehicle_status_s *status, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed);
+
+	void check_valid(hrt_abstime timestamp, hrt_abstime timeout, bool valid_in, bool *valid_out, bool *changed);
+
+	bool check_posvel_validity(const bool data_valid, const float data_accuracy, const float required_accuracy, const hrt_abstime& data_timestamp_us, hrt_abstime *last_fail_time_us, hrt_abstime *probation_time_us, bool *valid_state, bool *validity_changed);
+
+	void reset_posvel_validity(vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed);
 
 	void mission_init();
 

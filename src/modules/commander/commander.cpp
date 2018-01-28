@@ -185,10 +185,6 @@ static uint64_t last_print_mode_reject_time = 0;
 
 static systemlib::Hysteresis auto_disarm_hysteresis(false);
 
-static float eph_threshold = 5.0f;	// Horizontal position error threshold (m)
-static float epv_threshold = 10.0f;	// Vertivcal position error threshold (m)
-static float evh_threshold = 1.0f;	// Horizontal velocity error threshold (m)
-
 static hrt_abstime last_lpos_fail_time_us = 0;	// Last time that the local position validity recovery check failed (usec)
 static hrt_abstime last_gpos_fail_time_us = 0;	// Last time that the global position validity recovery check failed (usec)
 static hrt_abstime last_lvel_fail_time_us = 0;	// Last time that the local velocity validity recovery check failed (usec)
@@ -265,27 +261,6 @@ void control_status_leds(vehicle_status_s *status_local, const actuator_armed_s 
 			 battery_status_s *battery_local, const cpuload_s *cpuload_local);
 
 void get_circuit_breaker_params();
-
-void check_valid(hrt_abstime timestamp, hrt_abstime timeout, bool valid_in, bool *valid_out, bool *changed);
-
-/**
- * Set the main system state based on RC and override device inputs
- */
-transition_result_t set_main_state(struct vehicle_status_s *status, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed);
-
-/**
- * Enable override (manual reversion mode) on the system
- */
-transition_result_t set_main_state_override_on(struct vehicle_status_s *status_local, bool *changed);
-
-/**
- * Set the system main state based on the current RC inputs
- */
-transition_result_t set_main_state_rc(struct vehicle_status_s *status, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed);
-
-void reset_posvel_validity(vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed);
-
-bool check_posvel_validity(const bool data_valid, const float data_accuracy, const float required_accuracy, const hrt_abstime& data_timestamp_us, hrt_abstime *last_fail_time_us, hrt_abstime *probation_time_us, bool *valid_state, bool *validity_changed);
 
 void set_control_mode();
 
@@ -1151,7 +1126,7 @@ Commander::set_home_position(orb_advert_t &homePub, home_position_s &home,
 		}
 
 		//Ensure that the GPS accuracy is good enough for intializing home
-		if (globalPosition.eph > eph_threshold || globalPosition.epv > epv_threshold) {
+		if (globalPosition.eph > _home_eph_threshold.get() || globalPosition.epv > _home_epv_threshold.get()) {
 			return false;
 		}
 
@@ -1229,8 +1204,6 @@ Commander::run()
 	param_t _param_rc_in_off = param_find("COM_RC_IN_MODE");
 	param_t _param_rc_arm_hyst = param_find("COM_RC_ARM_HYST");
 	param_t _param_min_stick_change = param_find("COM_RC_STICK_OV");
-	param_t _param_eph = param_find("COM_HOME_H_T");
-	param_t _param_epv = param_find("COM_HOME_V_T");
 	param_t _param_geofence_action = param_find("GF_ACTION");
 	param_t _param_disarm_land = param_find("COM_DISARM_LAND");
 	param_t _param_low_bat_act = param_find("COM_LOW_BAT_ACT");
@@ -1682,10 +1655,6 @@ Commander::run()
 			param_get(_param_arm_mission_required, &arm_mission_required_param);
 			arm_requirements |= (arm_mission_required_param & (ARM_REQ_MISSION_BIT | ARM_REQ_ARM_AUTH_BIT));
 
-			/* EPH / EPV */
-			param_get(_param_eph, &eph_threshold);
-			param_get(_param_epv, &epv_threshold);
-
 			/* flight mode slots */
 			param_get(_param_fmode_1, &_flight_mode_slots[0]);
 			param_get(_param_fmode_2, &_flight_mode_slots[1]);
@@ -2016,7 +1985,7 @@ Commander::run()
 					status_flags.condition_global_position_valid = false;
 				} else {
 					// use global position message to determine validity
-					check_posvel_validity(true, global_position.eph, eph_threshold, global_position.timestamp, &last_gpos_fail_time_us, &gpos_probation_time_us, &status_flags.condition_global_position_valid, &status_changed);
+					check_posvel_validity(true, global_position.eph, _eph_threshold.get(), global_position.timestamp, &last_gpos_fail_time_us, &gpos_probation_time_us, &status_flags.condition_global_position_valid, &status_changed);
 				}
 			}
 		}
@@ -2036,8 +2005,8 @@ Commander::run()
 					status_flags.condition_local_velocity_valid = false;
 				} else {
 					// use local position message to determine validity
-					check_posvel_validity(local_position.xy_valid, local_position.eph, eph_threshold, local_position.timestamp, &last_lpos_fail_time_us, &lpos_probation_time_us, &status_flags.condition_local_position_valid, &status_changed);
-					check_posvel_validity(local_position.v_xy_valid, local_position.evh, evh_threshold, local_position.timestamp, &last_lvel_fail_time_us, &lvel_probation_time_us, &status_flags.condition_local_velocity_valid, &status_changed);
+					check_posvel_validity(local_position.xy_valid, local_position.eph, _eph_threshold.get(), local_position.timestamp, &last_lpos_fail_time_us, &lpos_probation_time_us, &status_flags.condition_local_position_valid, &status_changed);
+					check_posvel_validity(local_position.v_xy_valid, local_position.evh, _epv_threshold.get(), local_position.timestamp, &last_lvel_fail_time_us, &lvel_probation_time_us, &status_flags.condition_local_velocity_valid, &status_changed);
 				}
 			}
 		}
@@ -3066,7 +3035,7 @@ get_circuit_breaker_params()
 }
 
 void
-check_valid(hrt_abstime timestamp, hrt_abstime timeout, bool valid_in, bool *valid_out, bool *changed)
+Commander::check_valid(hrt_abstime timestamp, hrt_abstime timeout, bool valid_in, bool *valid_out, bool *changed)
 {
 	hrt_abstime t = hrt_absolute_time();
 	bool valid_new = (t < timestamp + timeout && t > timeout && valid_in);
@@ -3203,7 +3172,7 @@ control_status_leds(vehicle_status_s *status_local, const actuator_armed_s *actu
 }
 
 transition_result_t
-set_main_state(struct vehicle_status_s *status_local, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed)
+Commander::set_main_state(struct vehicle_status_s *status_local, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed)
 {
 	if (safety.override_available && safety.override_enabled) {
 		return set_main_state_override_on(status_local, changed);
@@ -3213,7 +3182,7 @@ set_main_state(struct vehicle_status_s *status_local, vehicle_global_position_s 
 }
 
 transition_result_t
-set_main_state_override_on(struct vehicle_status_s *status_local, bool *changed)
+Commander::set_main_state_override_on(struct vehicle_status_s *status_local, bool *changed)
 {
 	transition_result_t res = main_state_transition(status_local, commander_state_s::MAIN_STATE_MANUAL, main_state_prev, &status_flags, &internal_state);
 	*changed = (res == TRANSITION_CHANGED);
@@ -3222,7 +3191,7 @@ set_main_state_override_on(struct vehicle_status_s *status_local, bool *changed)
 }
 
 transition_result_t
-set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed)
+Commander::set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed)
 {
 	/* set main state according to RC switches */
 	transition_result_t res = TRANSITION_DENIED;
@@ -3600,7 +3569,7 @@ set_main_state_rc(struct vehicle_status_s *status_local, vehicle_global_position
 }
 
 void
-reset_posvel_validity(vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed)
+Commander::reset_posvel_validity(vehicle_global_position_s *global_position, vehicle_local_position_s *local_position, bool *changed)
 {
 	// reset all the check probation times back to the minimum value
 	gpos_probation_time_us = POSVEL_PROBATION_MIN;
@@ -3608,13 +3577,13 @@ reset_posvel_validity(vehicle_global_position_s *global_position, vehicle_local_
 	lvel_probation_time_us = POSVEL_PROBATION_MIN;
 
 	// recheck validity
-	check_posvel_validity(true, global_position->eph, eph_threshold, global_position->timestamp, &last_gpos_fail_time_us, &gpos_probation_time_us, &status_flags.condition_global_position_valid, changed);
-	check_posvel_validity(local_position->xy_valid, local_position->eph, eph_threshold, local_position->timestamp, &last_lpos_fail_time_us, &lpos_probation_time_us, &status_flags.condition_local_position_valid, changed);
-	check_posvel_validity(local_position->v_xy_valid, local_position->evh, evh_threshold, local_position->timestamp, &last_lvel_fail_time_us, &lvel_probation_time_us, &status_flags.condition_local_velocity_valid, changed);
+	check_posvel_validity(true, global_position->eph, _eph_threshold.get(), global_position->timestamp, &last_gpos_fail_time_us, &gpos_probation_time_us, &status_flags.condition_global_position_valid, changed);
+	check_posvel_validity(local_position->xy_valid, local_position->eph, _eph_threshold.get(), local_position->timestamp, &last_lpos_fail_time_us, &lpos_probation_time_us, &status_flags.condition_local_position_valid, changed);
+	check_posvel_validity(local_position->v_xy_valid, local_position->evh, _evh_threshold.get(), local_position->timestamp, &last_lvel_fail_time_us, &lvel_probation_time_us, &status_flags.condition_local_velocity_valid, changed);
 }
 
 bool
-check_posvel_validity(const bool data_valid, const float data_accuracy, const float required_accuracy, const hrt_abstime& data_timestamp_us, hrt_abstime* last_fail_time_us, hrt_abstime *probation_time_us, bool *valid_state, bool *validity_changed)
+Commander::check_posvel_validity(const bool data_valid, const float data_accuracy, const float required_accuracy, const hrt_abstime& data_timestamp_us, hrt_abstime* last_fail_time_us, hrt_abstime *probation_time_us, bool *valid_state, bool *validity_changed)
 {
 	const bool was_valid = *valid_state;
 	bool valid = was_valid;
