@@ -1582,6 +1582,8 @@ Commander::run()
 			struct parameter_update_s param_changed;
 			orb_copy(ORB_ID(parameter_update), param_changed_sub, &param_changed);
 
+			updateParams();
+
 			/* update parameters */
 			if (!armed.armed) {
 				if (param_get(_param_sys_type, &system_type) != OK) {
@@ -2006,7 +2008,7 @@ Commander::run()
 				} else {
 					// use local position message to determine validity
 					check_posvel_validity(local_position.xy_valid, local_position.eph, _eph_threshold.get(), local_position.timestamp, &last_lpos_fail_time_us, &lpos_probation_time_us, &status_flags.condition_local_position_valid, &status_changed);
-					check_posvel_validity(local_position.v_xy_valid, local_position.evh, _epv_threshold.get(), local_position.timestamp, &last_lvel_fail_time_us, &lvel_probation_time_us, &status_flags.condition_local_velocity_valid, &status_changed);
+					check_posvel_validity(local_position.v_xy_valid, local_position.evh, _evh_threshold.get(), local_position.timestamp, &last_lvel_fail_time_us, &lvel_probation_time_us, &status_flags.condition_local_velocity_valid, &status_changed);
 				}
 			}
 		}
