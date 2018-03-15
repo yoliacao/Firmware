@@ -121,8 +121,8 @@ private:
 
 
 	static constexpr int64_t sec_to_usec = (1000 * 1000);
-	static constexpr int64_t POSVEL_PROBATION_MIN = 1 * sec_to_usec;	/**< minimum probation duration (usec) */
-	static constexpr int64_t POSVEL_PROBATION_MAX = 100 * sec_to_usec;	/**< maximum probation duration (usec) */
+	const int64_t POSVEL_PROBATION_MIN = 1 * sec_to_usec;	/**< minimum probation duration (usec) */
+	const int64_t POSVEL_PROBATION_MAX = 100 * sec_to_usec;	/**< maximum probation duration (usec) */
 
 	hrt_abstime	_last_gpos_fail_time_us{0};	/**< Last time that the global position validity recovery check failed (usec) */
 	hrt_abstime	_last_lpos_fail_time_us{0};	/**< Last time that the local position validity recovery check failed (usec) */
@@ -132,10 +132,6 @@ private:
 	hrt_abstime	_gpos_probation_time_us = POSVEL_PROBATION_MIN;
 	hrt_abstime	_lpos_probation_time_us = POSVEL_PROBATION_MIN;
 	hrt_abstime	_lvel_probation_time_us = POSVEL_PROBATION_MIN;
-
-	hrt_abstime	get_posctl_nav_loss_delay() { return constrain(_failsafe_pos_delay.get() * sec_to_usec, POSVEL_PROBATION_MIN, POSVEL_PROBATION_MAX); }
-	hrt_abstime	get_posctl_nav_loss_prob() { return constrain(_failsafe_pos_probation.get() * sec_to_usec, POSVEL_PROBATION_MIN, POSVEL_PROBATION_MAX); }
-
 
 	bool handle_command(vehicle_status_s *status, const safety_s *safety, vehicle_command_s *cmd, actuator_armed_s *armed,
 			    home_position_s *home, orb_advert_t *home_pub, orb_advert_t *command_ack_pub, bool *changed);
