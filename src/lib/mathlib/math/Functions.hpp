@@ -125,7 +125,6 @@ const T expo_deadzone(const T &value, const T &e, const T &dz)
 	return expo(deadzone(value, dz), e);
 }
 
-
 /*
  * Constant, linear, constant function with the two corner points as parameters
  * y_high          -------

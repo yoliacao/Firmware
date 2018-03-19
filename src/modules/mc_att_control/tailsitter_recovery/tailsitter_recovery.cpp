@@ -47,28 +47,27 @@ TailsitterRecovery::TailsitterRecovery():
 
 TailsitterRecovery::~TailsitterRecovery()
 {
-
 }
 
-void TailsitterRecovery::setAttGains(math::Vector<3> &att_p, float yaw_ff)
+void TailsitterRecovery::setAttGains(matrix::Vector3f &att_p, float yaw_ff)
 {
 	_att_p = att_p;
 	_yaw_ff = yaw_ff;
 }
 
-void TailsitterRecovery::calcOptimalRates(math::Quaternion &q, math::Quaternion &q_sp, float yaw_move_rate,
-		math::Vector<3> &rates_opt)
+void TailsitterRecovery::calcOptimalRates(matrix::Quatf &q, matrix::Quatf &q_sp, float yaw_move_rate,
+		matrix::Vector3f &rates_opt)
 {
-	math::Matrix<3, 3> R = q.to_dcm();
+	matrix::Dcmf R(q);
 
 	// compute error quaternion
-	math::Quaternion q_sp_inv = {q_sp(0), -q_sp(1), -q_sp(2), -q_sp(3)};
-	math::Quaternion q_error = q * q_sp_inv;
+	matrix::Quatf q_sp_inv = {q_sp(0), -q_sp(1), -q_sp(2), -q_sp(3)};
+	matrix::Quatf q_error = q * q_sp_inv;
 
 	// compute tilt angle and corresponding tilt axis
-	math::Vector<3> zB = {0, 0, -1.0f};
+	matrix::Vector3f zB = {0, 0, -1.0f};
 
-	math::Vector<3> zI = q_error.conjugate(zB);
+	matrix::Vector3f zI = q_error.conjugate(zB);
 
 	float tilt_angle;
 	float inner_prod = zI * zB;
@@ -83,13 +82,13 @@ void TailsitterRecovery::calcOptimalRates(math::Quaternion &q, math::Quaternion 
 		tilt_angle = acosf(inner_prod);
 	}
 
-	math::Vector<3> tilt_axis = {0, 0, -1};
+	matrix::Vector3f tilt_axis = {0, 0, -1};
 
 	if (math::min(fabsf(tilt_angle), fabsf(tilt_angle - M_PI_F)) > 0.00001f) {
 		tilt_axis = zI % zB;
 	}
 
-	tilt_axis = R.transposed() * tilt_axis;
+	tilt_axis = R.transpose() * tilt_axis;
 
 	// compute desired rates based on tilt angle and tilt axis
 	float tilt_dir = atan2f(tilt_axis(0), tilt_axis(1));

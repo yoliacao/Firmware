@@ -236,14 +236,13 @@ void Tailsitter::update_transition_state()
 	_mc_pitch_weight = math::constrain(_mc_pitch_weight, 0.0f, 1.0f);
 
 	// compute desired attitude and thrust setpoint for the transition
-
 	_v_att_sp->timestamp = hrt_absolute_time();
 	_v_att_sp->roll_body = 0.0f;
 	_v_att_sp->yaw_body = _yaw_transition;
 
-	math::Quaternion q_sp;
-	q_sp.from_euler(_v_att_sp->roll_body, _v_att_sp->pitch_body, _v_att_sp->yaw_body);
-	memcpy(&_v_att_sp->q_d[0], &q_sp.data[0], sizeof(_v_att_sp->q_d));
+	matrix::Quatf q_sp(matrix::Eulerf(_v_att_sp->roll_body, _v_att_sp->pitch_body, _v_att_sp->yaw_body));
+	q_sp.copyTo(_v_att_sp->q_d);
+	_v_att_sp->q_d_valid = true;
 }
 
 void Tailsitter::waiting_on_tecs()

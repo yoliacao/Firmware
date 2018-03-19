@@ -136,10 +136,10 @@ void VotedSensorsUpdate::parameters_update()
 {
 	get_rot_matrix((enum Rotation)_parameters.board_rotation, &_board_rotation);
 	/* fine tune board offset */
-	math::Matrix<3, 3> board_rotation_offset;
-	board_rotation_offset.from_euler(M_DEG_TO_RAD_F * _parameters.board_offset[0],
-					 M_DEG_TO_RAD_F * _parameters.board_offset[1],
-					 M_DEG_TO_RAD_F * _parameters.board_offset[2]);
+	matrix::Dcmf board_rotation_offset(matrix::Eulerf(
+			M_DEG_TO_RAD_F * _parameters.board_offset[0],
+			M_DEG_TO_RAD_F * _parameters.board_offset[1],
+			M_DEG_TO_RAD_F * _parameters.board_offset[2]));
 
 	_board_rotation = board_rotation_offset * _board_rotation;
 
@@ -567,7 +567,7 @@ void VotedSensorsUpdate::accel_poll(struct sensor_combined_s &raw)
 
 			_accel_device_id[uorb_index] = accel_report.device_id;
 
-			math::Vector<3> accel_data;
+			matrix::Vector3f accel_data;
 
 			if (accel_report.integral_dt != 0) {
 				/*
@@ -579,8 +579,8 @@ void VotedSensorsUpdate::accel_poll(struct sensor_combined_s &raw)
 
 				// convert the delta velocities to an equivalent acceleration before application of corrections
 				float dt_inv = 1.e6f / accel_report.integral_dt;
-				accel_data = math::Vector<3>(accel_report.x_integral * dt_inv, accel_report.y_integral * dt_inv,
-							     accel_report.z_integral * dt_inv);
+				accel_data = matrix::Vector3f(accel_report.x_integral * dt_inv, accel_report.y_integral * dt_inv,
+							      accel_report.z_integral * dt_inv);
 
 				_last_sensor_data[uorb_index].accelerometer_integral_dt = accel_report.integral_dt;
 
@@ -589,7 +589,7 @@ void VotedSensorsUpdate::accel_poll(struct sensor_combined_s &raw)
 
 				// Correct each sensor for temperature effects
 				// Filtering and/or downsampling of temperature should be performed in the driver layer
-				accel_data = math::Vector<3>(accel_report.x, accel_report.y, accel_report.z);
+				accel_data = matrix::Vector3f(accel_report.x, accel_report.y, accel_report.z);
 
 				// handle the cse where this is our first output
 				if (_last_accel_timestamp[uorb_index] == 0) {
@@ -674,7 +674,7 @@ void VotedSensorsUpdate::gyro_poll(struct sensor_combined_s &raw)
 
 			_gyro_device_id[uorb_index] = gyro_report.device_id;
 
-			math::Vector<3> gyro_rate;
+			matrix::Vector3f gyro_rate;
 
 			if (gyro_report.integral_dt != 0) {
 				/*
@@ -686,8 +686,8 @@ void VotedSensorsUpdate::gyro_poll(struct sensor_combined_s &raw)
 
 				// convert the delta angles to an equivalent angular rate before application of corrections
 				float dt_inv = 1.e6f / gyro_report.integral_dt;
-				gyro_rate = math::Vector<3>(gyro_report.x_integral * dt_inv, gyro_report.y_integral * dt_inv,
-							    gyro_report.z_integral * dt_inv);
+				gyro_rate = matrix::Vector3f(gyro_report.x_integral * dt_inv, gyro_report.y_integral * dt_inv,
+							     gyro_report.z_integral * dt_inv);
 
 				_last_sensor_data[uorb_index].gyro_integral_dt = gyro_report.integral_dt;
 
@@ -696,7 +696,7 @@ void VotedSensorsUpdate::gyro_poll(struct sensor_combined_s &raw)
 
 				// Correct each sensor for temperature effects
 				// Filtering and/or downsampling of temperature should be performed in the driver layer
-				gyro_rate = math::Vector<3>(gyro_report.x, gyro_report.y, gyro_report.z);
+				gyro_rate = matrix::Vector3f(gyro_report.x, gyro_report.y, gyro_report.z);
 
 				// handle the case where this is our first output
 				if (_last_sensor_data[uorb_index].timestamp == 0) {
@@ -782,7 +782,7 @@ void VotedSensorsUpdate::mag_poll(struct sensor_combined_s &raw)
 				_mag.priority[uorb_index] = (uint8_t)priority;
 			}
 
-			math::Vector<3> vect(mag_report.x, mag_report.y, mag_report.z);
+			matrix::Vector3f vect(mag_report.x, mag_report.y, mag_report.z);
 			vect = _mag_rotation[uorb_index] * vect;
 
 			_last_sensor_data[uorb_index].magnetometer_ga[0] = vect(0);
@@ -790,8 +790,7 @@ void VotedSensorsUpdate::mag_poll(struct sensor_combined_s &raw)
 			_last_sensor_data[uorb_index].magnetometer_ga[2] = vect(2);
 
 			_last_mag_timestamp[uorb_index] = mag_report.timestamp;
-			_mag.voter.put(uorb_index, mag_report.timestamp, vect.data,
-				       mag_report.error_count, _mag.priority[uorb_index]);
+			_mag.voter.put(uorb_index, mag_report.timestamp, vect, mag_report.error_count, _mag.priority[uorb_index]);
 		}
 	}
 
@@ -851,15 +850,14 @@ void VotedSensorsUpdate::baro_poll(struct sensor_combined_s &raw)
 			_baro_device_id[uorb_index] = baro_report.device_id;
 
 			got_update = true;
-			math::Vector<3> vect(baro_report.altitude, 0.f, 0.f);
+			matrix::Vector3f vect(baro_report.altitude, 0.f, 0.f);
 
 			_last_sensor_data[uorb_index].baro_alt_meter = baro_report.altitude;
 			_last_sensor_data[uorb_index].baro_temp_celcius = baro_report.temperature;
 			_last_baro_pressure[uorb_index] = corrected_pressure;
 
 			_last_baro_timestamp[uorb_index] = baro_report.timestamp;
-			_baro.voter.put(uorb_index, baro_report.timestamp, vect.data,
-					baro_report.error_count, _baro.priority[uorb_index]);
+			_baro.voter.put(uorb_index, baro_report.timestamp, vect, baro_report.error_count, _baro.priority[uorb_index]);
 		}
 	}
 
