@@ -62,7 +62,7 @@ void AttitudeEstimator::ModelStatesCallback(const gazebo_msgs::ModelStatesConstP
 	/* Fill px4 attitude topic with contents from modelstates topic */
 
 	/* Convert quaternion to rotation matrix */
-	math::Quaternion quat;
+	matrix::Quatf quat;
 	//XXX: search for ardrone or other (other than 'plane') vehicle here
 	int index = 1;
 	quat(0) = (float)msg->pose[index].orientation.w;
@@ -91,7 +91,7 @@ void AttitudeEstimator::ImuCallback(const sensor_msgs::ImuConstPtr &msg)
 	/* Fill px4 attitude topic with contents from modelstates topic */
 
 	/* Convert quaternion to rotation matrix */
-	math::Quaternion quat;
+	matrix::Quatf quat;
 	//XXX: search for ardrone or other (other than 'plane') vehicle here
 	int index = 1;
 	quat(0) = (float)msg->orientation.w;

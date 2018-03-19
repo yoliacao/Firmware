@@ -50,7 +50,7 @@
 
 #pragma once
 
-#include <lib/mathlib/mathlib.h>
+#include <mathlib/mathlib.h>
 
 #define SigmoidFunction(val) 1/(1 + expf(-val))
 
@@ -64,14 +64,14 @@ public:
 	// If the vehicle is not in need of a recovery, this function will do normal
 	// attitude control based on attitude error. If a recovery situation is detected
 	// then the rates are computed in an optimal way as described above.
-	void calcOptimalRates(math::Quaternion &q, math::Quaternion &q_sp, float yaw_move_rate, math::Vector<3> &rates_opt);
+	void calcOptimalRates(matrix::Quatf &q, matrix::Quatf &q_sp, float yaw_move_rate, matrix::Vector3f &rates_opt);
 
 	// Set the gains of the controller attitude loop.
-	void setAttGains(math::Vector<3> &att_p, float yaw_ff);
+	void setAttGains(matrix::Vector3f &att_p, float yaw_ff);
 
 private:
 	bool _in_recovery_mode;	// indicates that the tailsitter is performing a recovery to hover
 
-	math::Vector<3> _att_p;	// gains for attitude loop
+	matrix::Vector3f _att_p;	// gains for attitude loop
 	float _yaw_ff;			// yaw feed forward gain
 };

@@ -97,7 +97,7 @@ void FollowTarget::on_activation()
 void FollowTarget::on_active()
 {
 	struct map_projection_reference_s target_ref;
-	math::Vector<3> target_reported_velocity(0, 0, 0);
+	matrix::Vector3f target_reported_velocity(0, 0, 0);
 	follow_target_s target_motion_with_offset = {};
 	uint64_t current_time = hrt_absolute_time();
 	bool _radius_entered = false;
