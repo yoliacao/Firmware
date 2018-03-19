@@ -274,9 +274,6 @@ private:
 
 	} _parameter_handles{};		/**< handles for interesting parameters */
 
-	// Rotation matrix and euler angles to extract from control state
-	matrix::Dcmf _R{};
-
 	ECL_RollController				_roll_ctrl;
 	ECL_PitchController				_pitch_ctrl;
 	ECL_YawController				_yaw_ctrl;

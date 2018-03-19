@@ -480,7 +480,7 @@ void FixedwingAttitudeControl::run()
 			orb_copy(ORB_ID(vehicle_attitude), _att_sub, &_att);
 
 			/* get current rotation matrix and euler angles from control state quaternions */
-			_R = matrix::Dcmf(Quatf(_att.q));
+			matrix::Dcmf R = matrix::Quatf(_att.q);
 
 			if (_vehicle_status.is_vtol && _parameters.vtol_type == vtol_type::TAILSITTER) {
 				/* vehicle is a tailsitter, we need to modify the estimated attitude for fw mode
@@ -499,17 +499,17 @@ void FixedwingAttitudeControl::run()
 				 * Rxy	Ryy  Rzy		-Rzy  Ryy  Rxy
 				 * Rxz	Ryz  Rzz		-Rzz  Ryz  Rxz
 				 * */
-				matrix::Dcmf R_adapted = _R;		//modified rotation matrix
+				matrix::Dcmf R_adapted = R;		//modified rotation matrix
 
 				/* move z to x */
-				R_adapted(0, 0) = _R(0, 2);
-				R_adapted(1, 0) = _R(1, 2);
-				R_adapted(2, 0) = _R(2, 2);
+				R_adapted(0, 0) = R(0, 2);
+				R_adapted(1, 0) = R(1, 2);
+				R_adapted(2, 0) = R(2, 2);
 
 				/* move x to z */
-				R_adapted(0, 2) = _R(0, 0);
-				R_adapted(1, 2) = _R(1, 0);
-				R_adapted(2, 2) = _R(2, 0);
+				R_adapted(0, 2) = R(0, 0);
+				R_adapted(1, 2) = R(1, 0);
+				R_adapted(2, 2) = R(2, 0);
 
 				/* change direction of pitch (convert to right handed system) */
 				R_adapted(0, 0) = -R_adapted(0, 0);
@@ -517,7 +517,7 @@ void FixedwingAttitudeControl::run()
 				R_adapted(2, 0) = -R_adapted(2, 0);
 
 				/* fill in new attitude data */
-				_R = R_adapted;
+				R = R_adapted;
 
 				/* lastly, roll- and yawspeed have to be swaped */
 				float helper = _att.rollspeed;
@@ -525,7 +525,7 @@ void FixedwingAttitudeControl::run()
 				_att.yawspeed = helper;
 			}
 
-			matrix::Eulerf euler_angles(_R);
+			matrix::Eulerf euler_angles(R);
 
 			updateSubscriptions();
 			vehicle_setpoint_poll();
