@@ -1809,7 +1809,7 @@ protected:
 			vmsg.y = vpos.y;
 			vmsg.z = vpos.z;
 
-			matrix::Vector3f rpy = matrix::Eulerf(matrix::Quatf(vatt.q));
+			matrix::Eulerf rpy = matrix::Quatf(vatt.q);
 			vmsg.roll = rpy(0);
 			vmsg.pitch = rpy(1);
 			vmsg.yaw = rpy(2);
