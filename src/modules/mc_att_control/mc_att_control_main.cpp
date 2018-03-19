@@ -59,7 +59,7 @@
 
 #include <conversion/rotation.h>
 #include <drivers/drv_hrt.h>
-#include <lib/geo/geo.h>
+#include <lib/ecl/geo/geo.h>
 #include <lib/mathlib/mathlib.h>
 #include <lib/mixer/mixer.h>
 #include <mathlib/math/filter/LowPassFilter2p.hpp>
