@@ -34,9 +34,11 @@ px4_add_module(
 	MODULE drivers__ulanding
 	MAIN ulanding_radar
 	COMPILE_FLAGS
+		-Wno-cast-align # TODO: fix and enable
 	SRCS
 		ulanding.cpp
+	MODULE_CONFIG
+		module.yaml
 	DEPENDS
-		platforms__common
 	)
-# vim: set noet ft=cmake fenc=utf-8 ff=unix :
+

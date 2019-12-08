@@ -60,8 +60,10 @@ def get_last_log():
     try:
         log_path = os.environ['PX4_LOG_DIR']
     except KeyError:
-        log_path = os.path.join(os.environ['HOME'],
-                                '.ros/rootfs/fs/microsd/log')
+        try:
+            log_path = os.path.join(os.environ['ROS_HOME'], 'log')
+        except KeyError:
+            log_path = os.path.join(os.environ['HOME'], '.ros/log')
     last_log_dir = sorted(glob.glob(os.path.join(log_path, '*')))[-1]
     last_log = sorted(glob.glob(os.path.join(last_log_dir, '*.ulg')))[-1]
     return last_log
@@ -106,6 +108,7 @@ def read_plan_file(f):
                 autocontinue=bool(wp['autoContinue']))
     else:
         raise IOError("no mission items")
+
 
 class MavrosMissionTest(MavrosTestCommon):
     """
@@ -198,8 +201,8 @@ class MavrosMissionTest(MavrosTestCommon):
                 # advanced to next wp
                 (index < self.mission_wp.current_seq)
                 # end of mission
-                or (index == (mission_length - 1)
-                    and self.mission_item_reached == index))
+                or (index == (mission_length - 1) and
+                    self.mission_item_reached == index))
 
             if reached:
                 rospy.loginfo(
@@ -257,8 +260,8 @@ class MavrosMissionTest(MavrosTestCommon):
         rospy.loginfo("run mission {0}".format(self.mission_name))
         for index, waypoint in enumerate(wps):
             # only check position for waypoints where this makes sense
-            if (waypoint.frame == Waypoint.FRAME_GLOBAL_REL_ALT
-                    or waypoint.frame == Waypoint.FRAME_GLOBAL):
+            if (waypoint.frame == Waypoint.FRAME_GLOBAL_REL_ALT or
+                    waypoint.frame == Waypoint.FRAME_GLOBAL):
                 alt = waypoint.z_alt
                 if waypoint.frame == Waypoint.FRAME_GLOBAL_REL_ALT:
                     alt += self.altitude.amsl - self.altitude.relative
@@ -280,10 +283,10 @@ class MavrosMissionTest(MavrosTestCommon):
                 self.wait_for_vtol_state(transition, 60, index)
 
             # after reaching position, wait for landing detection if applicable
-            if (waypoint.command == mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND
-                    or waypoint.command == mavutil.mavlink.MAV_CMD_NAV_LAND):
+            if (waypoint.command == mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND or
+                    waypoint.command == mavutil.mavlink.MAV_CMD_NAV_LAND):
                 self.wait_for_landed_state(
-                    mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 60, index)
+                    mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 120, index)
 
         self.set_arm(False, 5)
         self.clear_wps(5)

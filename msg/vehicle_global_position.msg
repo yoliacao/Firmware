@@ -5,9 +5,12 @@
 # e.g. control inputs of the vehicle in a Kalman-filter implementation.
 #
 
+uint64 timestamp		# time since system start (microseconds)
+
 float64 lat			# Latitude, (degrees)
 float64 lon			# Longitude, (degrees)
 float32 alt			# Altitude AMSL, (meters)
+float32 alt_ellipsoid		# Altitude above ellipsoid, (meters)
 
 float32 delta_alt 	# Reset delta for altitude
 uint8 lat_lon_reset_counter	# Counter for reset events on horizontal position coordinates
@@ -24,8 +27,6 @@ float32 epv			# Standard deviation of vertical position error, (metres)
 
 float32 terrain_alt		# Terrain altitude WGS84, (metres)
 bool terrain_alt_valid		# Terrain altitude estimate is valid
-
-float32 pressure_alt		# Pressure altitude AMSL, (metres)
 
 bool dead_reckoning		# True if this position is estimated through dead-reckoning
 

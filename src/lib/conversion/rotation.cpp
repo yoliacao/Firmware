@@ -37,20 +37,27 @@
  * Vector rotation library
  */
 
+#include <px4_platform_common/defines.h>
 #include "math.h"
 #include "rotation.h"
 
-__EXPORT void
-get_rot_matrix(enum Rotation rot, math::Matrix<3, 3> *rot_matrix)
+__EXPORT matrix::Dcmf
+get_rot_matrix(enum Rotation rot)
 {
-	float roll  = M_DEG_TO_RAD_F * (float)rot_lookup[rot].roll;
-	float pitch = M_DEG_TO_RAD_F * (float)rot_lookup[rot].pitch;
-	float yaw   = M_DEG_TO_RAD_F * (float)rot_lookup[rot].yaw;
-
-	rot_matrix->from_euler(roll, pitch, yaw);
+	return matrix::Dcmf{matrix::Eulerf{
+			math::radians((float)rot_lookup[rot].roll),
+			math::radians((float)rot_lookup[rot].pitch),
+			math::radians((float)rot_lookup[rot].yaw)}};
 }
 
-#define HALF_SQRT_2 0.70710678118654757f
+__EXPORT matrix::Quatf
+get_rot_quaternion(enum Rotation rot)
+{
+	return matrix::Quatf{matrix::Eulerf{
+			math::radians((float)rot_lookup[rot].roll),
+			math::radians((float)rot_lookup[rot].pitch),
+			math::radians((float)rot_lookup[rot].yaw)}};
+}
 
 __EXPORT void
 rotate_3f(enum Rotation rot, float &x, float &y, float &z)
@@ -63,8 +70,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 		return;
 
 	case ROTATION_YAW_45: {
-			tmp = HALF_SQRT_2 * (x - y);
-			y   = HALF_SQRT_2 * (x + y);
+			tmp = M_SQRT1_2_F * (x - y);
+			y   = M_SQRT1_2_F * (x + y);
 			x = tmp;
 			return;
 		}
@@ -75,8 +82,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 		}
 
 	case ROTATION_YAW_135: {
-			tmp = -HALF_SQRT_2 * (x + y);
-			y   =  HALF_SQRT_2 * (x - y);
+			tmp = -M_SQRT1_2_F * (x + y);
+			y   =  M_SQRT1_2_F * (x - y);
 			x = tmp;
 			return;
 		}
@@ -86,8 +93,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 		return;
 
 	case ROTATION_YAW_225: {
-			tmp = HALF_SQRT_2 * (y - x);
-			y   = -HALF_SQRT_2 * (x + y);
+			tmp = M_SQRT1_2_F * (y - x);
+			y   = -M_SQRT1_2_F * (x + y);
 			x = tmp;
 			return;
 		}
@@ -98,8 +105,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 		}
 
 	case ROTATION_YAW_315: {
-			tmp = HALF_SQRT_2 * (x + y);
-			y   = HALF_SQRT_2 * (y - x);
+			tmp = M_SQRT1_2_F * (x + y);
+			y   = M_SQRT1_2_F * (y - x);
 			x = tmp;
 			return;
 		}
@@ -110,8 +117,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 		}
 
 	case ROTATION_ROLL_180_YAW_45: {
-			tmp = HALF_SQRT_2 * (x + y);
-			y   = HALF_SQRT_2 * (x - y);
+			tmp = M_SQRT1_2_F * (x + y);
+			y   = M_SQRT1_2_F * (x - y);
 			x = tmp; z = -z;
 			return;
 		}
@@ -122,8 +129,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 		}
 
 	case ROTATION_ROLL_180_YAW_135: {
-			tmp = HALF_SQRT_2 * (y - x);
-			y   = HALF_SQRT_2 * (y + x);
+			tmp = M_SQRT1_2_F * (y - x);
+			y   = M_SQRT1_2_F * (y + x);
 			x = tmp; z = -z;
 			return;
 		}
@@ -134,8 +141,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 		}
 
 	case ROTATION_ROLL_180_YAW_225: {
-			tmp = -HALF_SQRT_2 * (x + y);
-			y   =  HALF_SQRT_2 * (y - x);
+			tmp = -M_SQRT1_2_F * (x + y);
+			y   =  M_SQRT1_2_F * (y - x);
 			x = tmp; z = -z;
 			return;
 		}
@@ -146,8 +153,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 		}
 
 	case ROTATION_ROLL_180_YAW_315: {
-			tmp =  HALF_SQRT_2 * (x - y);
-			y   = -HALF_SQRT_2 * (x + y);
+			tmp =  M_SQRT1_2_F * (x - y);
+			y   = -M_SQRT1_2_F * (x + y);
 			x = tmp; z = -z;
 			return;
 		}
@@ -159,8 +166,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 
 	case ROTATION_ROLL_90_YAW_45: {
 			tmp = z; z = y; y = -tmp;
-			tmp = HALF_SQRT_2 * (x - y);
-			y   = HALF_SQRT_2 * (x + y);
+			tmp = M_SQRT1_2_F * (x - y);
+			y   = M_SQRT1_2_F * (x + y);
 			x = tmp;
 			return;
 		}
@@ -173,8 +180,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 
 	case ROTATION_ROLL_90_YAW_135: {
 			tmp = z; z = y; y = -tmp;
-			tmp = -HALF_SQRT_2 * (x + y);
-			y   =  HALF_SQRT_2 * (x - y);
+			tmp = -M_SQRT1_2_F * (x + y);
+			y   =  M_SQRT1_2_F * (x - y);
 			x = tmp;
 			return;
 		}
@@ -186,8 +193,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 
 	case ROTATION_ROLL_270_YAW_45: {
 			tmp = z; z = -y; y = tmp;
-			tmp = HALF_SQRT_2 * (x - y);
-			y   = HALF_SQRT_2 * (x + y);
+			tmp = M_SQRT1_2_F * (x - y);
+			y   = M_SQRT1_2_F * (x + y);
 			x = tmp;
 			return;
 		}
@@ -200,8 +207,8 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 
 	case ROTATION_ROLL_270_YAW_135: {
 			tmp = z; z = -y; y = tmp;
-			tmp = -HALF_SQRT_2 * (x + y);
-			y   =  HALF_SQRT_2 * (x - y);
+			tmp = -M_SQRT1_2_F * (x + y);
+			y   =  M_SQRT1_2_F * (x - y);
 			x = tmp;
 			return;
 		}
@@ -267,16 +274,24 @@ rotate_3f(enum Rotation rot, float &x, float &y, float &z)
 		}
 
 	case ROTATION_PITCH_45: {
-			tmp = HALF_SQRT_2 * x + HALF_SQRT_2 * z;
-			z = HALF_SQRT_2 * z - HALF_SQRT_2 * x;
+			tmp = M_SQRT1_2_F * x + M_SQRT1_2_F * z;
+			z = M_SQRT1_2_F * z - M_SQRT1_2_F * x;
 			x = tmp;
 			return;
 		}
 
 	case ROTATION_PITCH_315: {
-			tmp = HALF_SQRT_2 * x - HALF_SQRT_2 * z;
-			z = HALF_SQRT_2 * z + HALF_SQRT_2 * x;
+			tmp = M_SQRT1_2_F * x - M_SQRT1_2_F * z;
+			z = M_SQRT1_2_F * z + M_SQRT1_2_F * x;
 			x = tmp;
+			return;
+		}
+
+	case ROTATION_ROLL_90_YAW_270: {
+			tmp = x;
+			x = -z;
+			z = y;
+			y = -tmp;
 			return;
 		}
 	}

@@ -46,10 +46,10 @@
 #include <math.h>
 
 #include <drivers/drv_hrt.h>
-#include <controllib/blocks.hpp>
-#include <controllib/block/BlockParam.hpp>
+#include <px4_platform_common/module_params.h>
 #include <systemlib/mavlink_log.h>
 #include <mathlib/mathlib.h>
+#include <matrix/math.hpp>
 
 namespace runwaytakeoff
 {
@@ -62,11 +62,11 @@ enum RunwayTakeoffState {
 	FLY = 4 /**< fly towards takeoff waypoint */
 };
 
-class __EXPORT RunwayTakeoff : public control::SuperBlock
+class __EXPORT RunwayTakeoff : public ModuleParams
 {
 public:
-	RunwayTakeoff();
-	~RunwayTakeoff();
+	RunwayTakeoff(ModuleParams *parent);
+	~RunwayTakeoff() = default;
 
 	void init(float yaw, double current_lat, double current_lon);
 	void update(float airspeed, float alt_agl, double current_lat, double current_lon, orb_advert_t *mavlink_log_pub);
@@ -74,8 +74,8 @@ public:
 	RunwayTakeoffState getState() { return _state; }
 	bool isInitialized() { return _initialized; }
 
-	bool runwayTakeoffEnabled() { return _runway_takeoff_enabled.get(); }
-	float getMinAirspeedScaling() { return _min_airspeed_scaling.get(); }
+	bool runwayTakeoffEnabled() { return _param_rwto_tkoff.get(); }
+	float getMinAirspeedScaling() { return _param_rwto_airspd_scl.get(); }
 	float getInitYaw() { return _init_yaw; }
 
 	bool controlYaw();
@@ -91,7 +91,6 @@ public:
 
 	void reset();
 
-protected:
 private:
 	/** state variables **/
 	RunwayTakeoffState _state;
@@ -99,20 +98,21 @@ private:
 	hrt_abstime _initialized_time;
 	float _init_yaw;
 	bool _climbout;
-	unsigned _throttle_ramp_time;
 	matrix::Vector2f _start_wp;
 
-	/** parameters **/
-	control::BlockParamBool _runway_takeoff_enabled;
-	control::BlockParamInt _heading_mode;
-	control::BlockParamFloat _nav_alt;
-	control::BlockParamFloat _takeoff_throttle;
-	control::BlockParamFloat _runway_pitch_sp;
-	control::BlockParamFloat _max_takeoff_pitch;
-	control::BlockParamFloat _max_takeoff_roll;
-	control::BlockParamFloat _min_airspeed_scaling;
-	control::BlockParamFloat _airspeed_min;
-	control::BlockParamFloat _climbout_diff;
+	DEFINE_PARAMETERS(
+		(ParamBool<px4::params::RWTO_TKOFF>) _param_rwto_tkoff,
+		(ParamInt<px4::params::RWTO_HDG>) _param_rwto_hdg,
+		(ParamFloat<px4::params::RWTO_NAV_ALT>) _param_rwto_nav_alt,
+		(ParamFloat<px4::params::RWTO_MAX_THR>) _param_rwto_max_thr,
+		(ParamFloat<px4::params::RWTO_PSP>) _param_rwto_psp,
+		(ParamFloat<px4::params::RWTO_MAX_PITCH>) _param_rwto_max_pitch,
+		(ParamFloat<px4::params::RWTO_MAX_ROLL>) _param_rwto_max_roll,
+		(ParamFloat<px4::params::RWTO_AIRSPD_SCL>) _param_rwto_airspd_scl,
+		(ParamFloat<px4::params::RWTO_RAMP_TIME>) _param_rwto_ramp_time,
+		(ParamFloat<px4::params::FW_AIRSPD_MIN>) _param_fw_airspd_min,
+		(ParamFloat<px4::params::FW_CLMBOUT_DIFF>) _param_fw_clmbout_diff
+	)
 
 };
 

@@ -33,11 +33,10 @@
 px4_add_module(
 	MODULE drivers__fxas21002c
 	MAIN fxas21002c
-	STACK_MAIN 1200
 	COMPILE_FLAGS
+		-Wno-cast-align # TODO: fix and enable
 	SRCS
-		fxas21002c.cpp
-	DEPENDS
-		platforms__common
+		FXAS21002C.cpp
+		FXAS21002C.hpp
+		fxas21002c_main.cpp
 	)
-# vim: set noet ft=cmake fenc=utf-8 ff=unix :

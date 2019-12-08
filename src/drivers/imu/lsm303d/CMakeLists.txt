@@ -33,11 +33,13 @@
 px4_add_module(
 	MODULE drivers__lsm303d
 	MAIN lsm303d
-	STACK_MAIN 1200
 	COMPILE_FLAGS
+		-Wno-cast-align # TODO: fix and enable
 	SRCS
-		lsm303d.cpp
+		lsm303d_main.cpp
+		LSM303D.cpp
 	DEPENDS
-		platforms__common
+		drivers_accelerometer
+		drivers_magnetometer
+		px4_work_queue
 	)
-# vim: set noet ft=cmake fenc=utf-8 ff=unix :

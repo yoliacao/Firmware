@@ -33,11 +33,9 @@
 px4_add_module(
 	MODULE systemcmds__tune_control
 	MAIN tune_control
-	STACK_MAIN 2500 # TODO: choose an appropriate stack size
 	COMPILE_FLAGS
 	SRCS
 		tune_control.cpp
 	DEPENDS
-		platforms__common
+		tunes
 	)
-# vim: set noet ft=cmake fenc=utf-8 ff=unix :

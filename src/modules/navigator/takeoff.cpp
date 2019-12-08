@@ -31,11 +31,11 @@
  *
  ****************************************************************************/
 /**
- * @file Takeoff.cpp
+ * @file takeoff.cpp
  *
  * Helper class to Takeoff
  *
- * @author Lorenz Meier <lorenz@px4.io
+ * @author Lorenz Meier <lorenz@px4.io>
  */
 
 #include "takeoff.h"
@@ -96,9 +96,12 @@ Takeoff::set_takeoff_position()
 
 		// If the altitude suggestion is lower than home + minimum clearance, raise it and complain.
 		if (abs_altitude < min_abs_altitude) {
+			if (abs_altitude < min_abs_altitude - 0.1f) { // don't complain if difference is smaller than 10cm
+				mavlink_log_critical(_navigator->get_mavlink_log_pub(),
+						     "Using minimum takeoff altitude: %.2f m", (double)_navigator->get_takeoff_min_alt());
+			}
+
 			abs_altitude = min_abs_altitude;
-			mavlink_log_critical(_navigator->get_mavlink_log_pub(),
-					     "Using minimum takeoff altitude: %.2f m", (double)_navigator->get_takeoff_min_alt());
 		}
 
 	} else {
@@ -136,10 +139,10 @@ Takeoff::set_takeoff_position()
 			pos_sp_triplet->current.yaw = rep->current.yaw;
 		}
 
-		if (PX4_ISFINITE(rep->current.lat) && PX4_ISFINITE(rep->current.lon)) {
-			pos_sp_triplet->current.lat = rep->current.lat;
-			pos_sp_triplet->current.lon = rep->current.lon;
-		}
+		// Set the current latitude and longitude even if they are NAN
+		// NANs are handled in FlightTaskAuto.cpp
+		pos_sp_triplet->current.lat = rep->current.lat;
+		pos_sp_triplet->current.lon = rep->current.lon;
 
 		// mark this as done
 		memset(rep, 0, sizeof(*rep));

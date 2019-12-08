@@ -45,7 +45,7 @@
 
 #include <dataman/dataman.h>
 #include <drivers/drv_hrt.h>
-#include <geo/geo.h>
+#include <lib/ecl/geo/geo.h>
 #include <systemlib/mavlink_log.h>
 
 #include "navigator.h"
@@ -54,7 +54,8 @@
 
 Geofence::Geofence(Navigator *navigator) :
 	ModuleParams(navigator),
-	_navigator(navigator)
+	_navigator(navigator),
+	_sub_airdata(ORB_ID(vehicle_air_data))
 {
 	// we assume there's no concurrent fence update on startup
 	_updateFence();
@@ -181,15 +182,13 @@ bool Geofence::checkAll(const struct vehicle_global_position_s &global_position)
 	return checkAll(global_position.lat, global_position.lon, global_position.alt);
 }
 
-bool Geofence::checkAll(const struct vehicle_global_position_s &global_position, float baro_altitude_amsl)
+bool Geofence::checkAll(const struct vehicle_global_position_s &global_position, const float alt)
 {
-	return checkAll(global_position.lat, global_position.lon, baro_altitude_amsl);
+	return checkAll(global_position.lat, global_position.lon, alt);
 }
 
-
-bool Geofence::check(const struct vehicle_global_position_s &global_position,
-		     const struct vehicle_gps_position_s &gps_position, float baro_altitude_amsl,
-		     const struct home_position_s home_pos, bool home_position_set)
+bool Geofence::check(const vehicle_global_position_s &global_position, const vehicle_gps_position_s &gps_position,
+		     const home_position_s home_pos, bool home_position_set)
 {
 	if (getAltitudeMode() == Geofence::GF_ALT_MODE_WGS84) {
 		if (getSource() == Geofence::GF_SOURCE_GLOBALPOS) {
@@ -201,12 +200,15 @@ bool Geofence::check(const struct vehicle_global_position_s &global_position,
 		}
 
 	} else {
+		// get baro altitude
+		_sub_airdata.update();
+		const float baro_altitude_amsl = _sub_airdata.get().baro_alt_meter;
+
 		if (getSource() == Geofence::GF_SOURCE_GLOBALPOS) {
 			return checkAll(global_position, baro_altitude_amsl);
 
 		} else {
-			return checkAll((double)gps_position.lat * 1.0e-7, (double)gps_position.lon * 1.0e-7,
-					baro_altitude_amsl);
+			return checkAll((double)gps_position.lat * 1.0e-7, (double)gps_position.lon * 1.0e-7, baro_altitude_amsl);
 		}
 	}
 }
@@ -222,12 +224,12 @@ bool Geofence::checkAll(double lat, double lon, float altitude)
 
 	if (isHomeRequired() && _navigator->home_position_valid()) {
 
-		const float max_horizontal_distance = _param_max_hor_distance.get();
-		const float max_vertical_distance = _param_max_ver_distance.get();
+		const float max_horizontal_distance = _param_gf_max_hor_dist.get();
+		const float max_vertical_distance = _param_gf_max_ver_dist.get();
 
 		const double home_lat = _navigator->get_home_position()->lat;
 		const double home_lon = _navigator->get_home_position()->lon;
-		const double home_alt = _navigator->get_home_position()->alt;
+		const float home_alt = _navigator->get_home_position()->alt;
 
 		float dist_xy = -1.0f;
 		float dist_z = -1.0f;
@@ -266,7 +268,7 @@ bool Geofence::checkAll(double lat, double lon, float altitude)
 	} else {
 		_outside_counter++;
 
-		if (_outside_counter > _param_counter_threshold.get()) {
+		if (_outside_counter > _param_gf_count.get()) {
 			return inside_fence;
 
 		} else {
@@ -566,8 +568,8 @@ int Geofence::clearDm()
 
 bool Geofence::isHomeRequired()
 {
-	bool max_horizontal_enabled = (_param_max_hor_distance.get() > FLT_EPSILON);
-	bool max_vertical_enabled = (_param_max_ver_distance.get() > FLT_EPSILON);
+	bool max_horizontal_enabled = (_param_gf_max_hor_dist.get() > FLT_EPSILON);
+	bool max_vertical_enabled = (_param_gf_max_ver_dist.get() > FLT_EPSILON);
 	bool geofence_action_rtl = (getGeofenceAction() == geofence_result_s::GF_ACTION_RTL);
 
 	return max_horizontal_enabled || max_vertical_enabled || geofence_action_rtl;

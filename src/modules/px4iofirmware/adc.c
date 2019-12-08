@@ -36,7 +36,7 @@
  *
  * Simple ADC support for PX4IO on STM32.
  */
-#include <px4_config.h>
+#include <px4_platform_common/px4_config.h>
 #include <stdint.h>
 
 #include <nuttx/arch.h>
@@ -44,7 +44,7 @@
 #include <stm32.h>
 
 #include <drivers/drv_hrt.h>
-#include <systemlib/perf_counter.h>
+#include <perf/perf_counter.h>
 
 #define DEBUG
 #include "px4io.h"

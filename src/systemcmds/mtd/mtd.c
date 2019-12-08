@@ -39,9 +39,9 @@
  * @author Lorenz Meier <lm@inf.ethz.ch>
  */
 
-#include <px4_config.h>
-#include <px4_log.h>
-#include <px4_module.h>
+#include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/log.h>
+#include <px4_platform_common/module.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,8 +62,7 @@
 #include <arch/board/board.h>
 
 #include "systemlib/px4_macros.h"
-#include "systemlib/systemlib.h"
-#include "systemlib/param/param.h"
+#include <parameters/param.h>
 
 #include <board_config.h>
 

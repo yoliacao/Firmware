@@ -41,12 +41,12 @@
 #include <poll.h>
 #include <math.h>
 #include <fcntl.h>
-#include <px4_defines.h>
+#include <px4_platform_common/defines.h>
 #include <drivers/drv_hrt.h>
 #include <uORB/topics/sensor_combined.h>
 #include <drivers/drv_baro.h>
 #include <systemlib/mavlink_log.h>
-#include <systemlib/param/param.h>
+#include <parameters/param.h>
 
 int do_baro_calibration(orb_advert_t *mavlink_log_pub)
 {
