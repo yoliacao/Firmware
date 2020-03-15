@@ -74,7 +74,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo
 echo "Installing PX4 general dependencies"
 
-sudo apt-get update -yy --quiet
+# sudo apt-get update -yy --quiet
 sudo apt-get -yy --quiet --no-install-recommends install \
 	astyle \
 	build-essential \
@@ -115,15 +115,15 @@ fi
 # Python3 dependencies
 echo
 echo "Installing PX4 Python3 dependencies"
-sudo python3 -m pip install --upgrade pip setuptools wheel
-sudo python3 -m pip install -r ${DIR}/requirements.txt
+sudo python3 -m pip install --upgrade pip setuptools wheel --proxy=http://127.0.0.1:7890
+sudo python3 -m pip install -r ${DIR}/requirements.txt --proxy=http://127.0.0.1:7890
 
 
 # Python2 dependencies
 echo
 echo "Installing PX4 Python2 dependencies"
-sudo python2 -m pip install --upgrade pip setuptools wheel
-sudo python2 -m pip install -r ${DIR}/requirements.txt
+sudo python2 -m pip install --upgrade pip setuptools wheel --proxy=http://127.0.0.1:7890
+sudo python2 -m pip install -r ${DIR}/requirements.txt --proxy=http://127.0.0.1:7890
 
 
 # NuttX toolchain (arm-none-eabi-gcc)
@@ -153,8 +153,8 @@ if [[ $INSTALL_NUTTX == "true" ]]; then
 	sudo apt-get remove modemmanager -y
 
 	# arm-none-eabi-gcc
-	NUTTX_GCC_VERSION="7-2017-q4-major"
-
+	#NUTTX_GCC_VERSION="7-2017-q4-major"
+	NUTTX_GCC_VERSION="7-2018-q2-6"
 	GCC_VER_STR=$(arm-none-eabi-gcc --version)
 	STATUSRETVAL=$(echo $GCC_VER_STR | grep -c "${NUTTX_GCC_VERSION}")
 
@@ -195,7 +195,7 @@ if [[ $INSTALL_SIM == "true" ]]; then
 	# Gazebo
 	sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
 	wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
-	sudo apt-get update -yy --quiet
+	# sudo apt-get update -yy --quiet
 	sudo apt-get -yy --quiet --no-install-recommends install \
 		gazebo9 \
 		gstreamer1.0-plugins-bad \
